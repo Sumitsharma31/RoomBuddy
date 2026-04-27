@@ -1,9 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  roomsCollection,
-  roomDoc,
-  membersCollection,
-  userDoc,
   updateDoc,
   getDocs,
   getDoc,
@@ -12,7 +8,15 @@ import {
   where,
   deleteDoc,
 } from 'firebase/firestore';
-import { parseRoom, generateRoomCode, memberDoc } from '../lib/firestore';
+import { 
+  roomsCollection,
+  roomDoc,
+  membersCollection,
+  userDoc,
+  parseRoom, 
+  generateRoomCode, 
+  memberDoc 
+} from '../lib/firestore';
 import { User } from 'firebase/auth';
 import { onAuthChange, logout } from '../lib/auth';
 
@@ -83,7 +87,7 @@ export function useRoom() {
         name: roomName,
         code: roomCode,
         adminId: userId,
-        status: 'active',
+        status: 'active' as 'active' | 'settled',
         memberCount: 1,
         createdAt: new Date(),
       };

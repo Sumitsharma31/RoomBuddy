@@ -17,10 +17,8 @@ export async function login(email: string, password: string): Promise<User> {
   } catch (error: any) {
     if (error.code === AuthErrorCodes.INVALID_EMAIL) {
       throw new Error('Invalid email address');
-    } else if (error.code === AuthErrorCodes.USER_DELETED) {
-      throw new Error('No account found with this email');
-    } else if (error.code === AuthErrorCodes.WRONG_PASSWORD) {
-      throw new Error('Incorrect password');
+    } else if (error.code === AuthErrorCodes.INVALID_LOGIN_CREDENTIALS) {
+      throw new Error('Invalid email or password');
     } else {
       throw new Error(error.message || 'Login failed');
     }

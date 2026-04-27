@@ -5,10 +5,10 @@ import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 // Get FCM token for current user
 export async function getFCMToken(): Promise<string | null> {
+  if (!messaging) return null;
   try {
-    const token = await getToken({
+    const token = await getToken(messaging, {
       vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
-      serviceWorkerRegistration: await navigator.serviceWorker.ready,
     });
     return token;
   } catch (error) {
@@ -54,7 +54,7 @@ export async function saveNotification(userId: string, notification: {
 }
 
 // Initialize FCM for Capacitor (mobile)
-export async function initializeFCM(): Promise<void> {
+export async function initializeFCM(): Promise<string | null> {
   // For web
   const permission = await requestNotificationPermission();
   if (permission) {

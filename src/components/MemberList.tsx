@@ -20,7 +20,7 @@ export default function MemberList({ members, adminId }: MemberListProps) {
         </div>
         <span className="badge badge-admin" style={{ fontSize: '0.7rem' }}>{members.length} total</span>
       </div>
-      <div style={{ divide: 'var(--border)' }} className="stagger-children">
+      <div className="stagger-children">
         {members.map((member, i) => (
           <div key={member.userId} style={{
             padding: '0.875rem 1.25rem',
