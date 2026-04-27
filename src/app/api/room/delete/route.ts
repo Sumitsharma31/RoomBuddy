@@ -31,7 +31,8 @@ export async function POST(request: NextRequest) {
     const delRequestRef = roomRef.collection('deletionRequest').doc('current');
     const delSnap = await delRequestRef.get();
 
-    if (!delSnap.exists || delSnap.data().status !== 'approved') {
+    const delData = delSnap.data();
+    if (!delSnap.exists || !delData || delData.status !== 'approved') {
       return NextResponse.json({ error: 'Deletion not authorized or request not found' }, { status: 403 });
     }
 

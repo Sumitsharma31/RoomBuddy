@@ -36,7 +36,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Room not found' }, { status: 404 });
     }
 
-    if (roomSnap.data().adminId !== userId) {
+    const roomData = roomSnap.data();
+    if (!roomData) {
+      return NextResponse.json({ error: 'Room data not found' }, { status: 404 });
+    }
+
+    if (roomData.adminId !== userId) {
       return NextResponse.json({ error: 'Only admin can request deletion' }, { status: 403 });
     }
 

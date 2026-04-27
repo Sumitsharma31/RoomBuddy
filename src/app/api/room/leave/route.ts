@@ -36,7 +36,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Room not found' }, { status: 404 });
     }
 
-    if (roomSnap.data().adminId === userId) {
+    const roomData = roomSnap.data();
+    if (!roomData) {
+      return NextResponse.json({ error: 'Room data not found' }, { status: 404 });
+    }
+
+    if (roomData.adminId === userId) {
       return NextResponse.json({ error: 'Admin must transfer ownership before leaving' }, { status: 400 });
     }
 
@@ -44,7 +49,7 @@ export async function POST(request: NextRequest) {
     await adminDb.runTransaction(async (transaction) => {
       transaction.delete(roomRef.collection('members').doc(userId));
       transaction.update(adminDb.collection('users').doc(userId), { currentRoomId: null });
-      transaction.update(roomRef, { memberCount: (roomSnap.data().memberCount || 1) - 1 });
+      transaction.update(roomRef, { memberCount: (roomData.memberCount || 1) - 1 });
     });
 
     return NextResponse.json({ success: true });
