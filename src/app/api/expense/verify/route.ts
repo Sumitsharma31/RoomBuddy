@@ -43,6 +43,10 @@ export async function POST(request: NextRequest) {
 
     const expenseData = expenseSnap.data();
 
+    if (!expenseData) {
+      return NextResponse.json({ error: 'Expense data not found' }, { status: 404 });
+    }
+
     // Check if user is trying to verify own expense
     if (expenseData.paidBy === userId) {
       return NextResponse.json({ error: 'Cannot verify own expense' }, { status: 400 });
