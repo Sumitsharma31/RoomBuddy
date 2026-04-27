@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { login, signup, loginWithGoogle } from '@/lib/auth';
@@ -40,7 +42,7 @@ export default function SignupPage() {
       } else {
         const user = await login(email, password);
       }
-      router.push('/home');
+      router.push('/');
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -67,7 +69,7 @@ export default function SignupPage() {
           createdAt: new Date(),
         });
       }
-      router.push('/home');
+      router.push('/');
     } catch (err: any) {
       setError(err.message);
     } finally {
