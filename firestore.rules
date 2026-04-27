@@ -1,0 +1,55 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isRoomMember(roomId) {
+      return isAuthenticated() && exists(/databases/$(database)/documents/rooms/$(roomId)/members/$(request.auth.uid));
+    }
+
+    // Users Collection
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Rooms Collection
+    match /rooms/{roomId} {
+      allow read: if isRoomMember(roomId);
+      allow create: if isAuthenticated();
+      // Only admin can delete or update
+      allow update, delete: if isRoomMember(roomId); // You might want to restrict this to 'admin' in production
+
+      // Room Subcollections
+      match /members/{memberId} {
+        allow read: if isRoomMember(roomId);
+        allow write: if isAuthenticated(); // Allow joining/leaving
+      }
+
+      match /expenses/{expenseId} {
+        allow read: if isRoomMember(roomId);
+        allow write: if isRoomMember(roomId);
+      }
+
+      match /settlements/{settlementId} {
+        allow read: if isRoomMember(roomId);
+        allow write: if isRoomMember(roomId);
+      }
+      
+      match /deletionRequest/{docId} {
+        allow read: if isRoomMember(roomId);
+        allow write: if isRoomMember(roomId);
+      }
+    }
+
+    // Notifications Collection
+    match /notifications/{userId}/items/{notificationId} {
+      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+    }
+  }
+}
