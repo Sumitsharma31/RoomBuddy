@@ -4,11 +4,26 @@ import {
   createUserWithEmailAndPassword,
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signOut,
   updateProfile,
+  sendPasswordResetEmail,
   User,
   AuthErrorCodes,
 } from 'firebase/auth';
+
+export async function resetPassword(email: string): Promise<void> {
+  try {
+    await sendPasswordResetEmail(auth, email);
+  } catch (error: any) {
+    if (error.code === AuthErrorCodes.INVALID_EMAIL) {
+      throw new Error('Invalid email address');
+    } else {
+      throw new Error(error.message || 'Password reset failed');
+    }
+  }
+}
 
 export async function login(email: string, password: string): Promise<User> {
   try {
@@ -46,13 +61,22 @@ export async function signup(name: string, email: string, password: string): Pro
   }
 }
 
-export async function loginWithGoogle(): Promise<User> {
+export async function loginWithGoogle(): Promise<void> {
   const provider = new GoogleAuthProvider();
   try {
-    const result = await signInWithPopup(auth, provider);
-    return result.user;
+    // For mobile WebViews, redirect is much more reliable than popup
+    await signInWithRedirect(auth, provider);
   } catch (error: any) {
     throw new Error(error.message || 'Google login failed');
+  }
+}
+
+export async function getGoogleRedirectResult(): Promise<User | null> {
+  try {
+    const result = await getRedirectResult(auth);
+    return result?.user || null;
+  } catch (error: any) {
+    throw new Error(error.message || 'Failed to get redirect result');
   }
 }
 

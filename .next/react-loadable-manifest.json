@@ -1,1 +1,16 @@
-{}
+{
+  "lib\\firebase.ts -> firebase/analytics": {
+    "id": 2650,
+    "files": [
+      "static/chunks/349.b4c3667fc3585bd0.js",
+      "static/chunks/650.0cdbefbfc34ccdf3.js"
+    ]
+  },
+  "lib\\firebase.ts -> firebase/messaging": {
+    "id": 7910,
+    "files": [
+      "static/chunks/349.b4c3667fc3585bd0.js",
+      "static/chunks/910.c2bfe03f6b2f4f56.js"
+    ]
+  }
+}

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { login, signup, loginWithGoogle } from '@/lib/auth';
+import { login, signup, loginWithGoogle, resetPassword, getGoogleRedirectResult } from '@/lib/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
@@ -14,7 +14,35 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetMessage, setResetMessage] = useState({ type: '', text: '' });
   const router = useRouter();
+
+  useEffect(() => {
+    const handleRedirect = async () => {
+      try {
+        const user = await getGoogleRedirectResult();
+        if (user) {
+          setLoading(true);
+          const userDocRef = doc(db, 'users', user.uid);
+          const userSnap = await getDoc(userDocRef);
+          if (!userSnap.exists()) {
+            await setDoc(userDocRef, {
+              name: user.displayName || 'Roommate', email: user.email,
+              photoURL: user.photoURL, currentRoomId: null, fcmToken: null, createdAt: new Date(),
+            });
+          }
+          router.push('/');
+        }
+      } catch (err: any) {
+        setError(err.message);
+        setLoading(false);
+      }
+    };
+    handleRedirect();
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,20 +72,25 @@ export default function LoginPage() {
   const handleGoogleLogin = async () => {
     setError(''); setLoading(true);
     try {
-      const user = await loginWithGoogle();
-      const userDocRef = doc(db, 'users', user.uid);
-      const userSnap = await getDoc(userDocRef);
-      if (!userSnap.exists()) {
-        await setDoc(userDocRef, {
-          name: user.displayName || 'Roommate', email: user.email,
-          photoURL: user.photoURL, currentRoomId: null, fcmToken: null, createdAt: new Date(),
-        });
-      }
-      router.push('/');
+      await loginWithGoogle();
     } catch (err: any) {
       setError(err.message);
-    } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetEmail) return;
+    setResetLoading(true);
+    setResetMessage({ type: '', text: '' });
+    try {
+      await resetPassword(resetEmail);
+      setResetMessage({ type: 'success', text: 'Password reset link sent! Check your email.' });
+    } catch (err: any) {
+      setResetMessage({ type: 'error', text: err.message });
+    } finally {
+      setResetLoading(false);
     }
   };
 
@@ -156,6 +189,14 @@ export default function LoginPage() {
                   }
                 </button>
               </div>
+              {!isSignup && (
+                <div style={{ textAlign: 'right', marginTop: '0.375rem' }}>
+                  <button type="button" onClick={() => { setShowResetModal(true); setResetEmail(email); }}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--accent-light)', fontSize: '0.8125rem', fontWeight: 500 }}>
+                    Forgot Password?
+                  </button>
+                </div>
+              )}
             </div>
 
             <button type="submit" disabled={loading} className="btn-primary" style={{ width: '100%', marginTop: '0.25rem', padding: '0.9375rem' }}>
@@ -191,6 +232,58 @@ export default function LoginPage() {
           </button>
         </p>
       </div>
+
+      {/* Reset Password Modal */}
+      {showResetModal && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 100,
+          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'
+        }}>
+          <div className="animate-scale-in" style={{
+            background: 'var(--bg-card)', border: '1px solid var(--bg-glass-border)',
+            borderRadius: 'var(--radius-lg)', padding: '2rem', width: '100%', maxWidth: '400px',
+            boxShadow: 'var(--shadow-lg)'
+          }}>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.5rem' }}>Reset Password</h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
+              Enter your email address and we'll send you a link to reset your password.
+            </p>
+
+            {resetMessage.text && (
+              <div style={{
+                padding: '0.875rem', borderRadius: 'var(--radius-md)', marginBottom: '1.25rem',
+                background: resetMessage.type === 'error' ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)',
+                color: resetMessage.type === 'error' ? '#ef4444' : '#10b981',
+                fontSize: '0.875rem', border: `1px solid ${resetMessage.type === 'error' ? 'rgba(239,68,68,0.2)' : 'rgba(16,185,129,0.2)'}`
+              }}>
+                {resetMessage.text}
+              </div>
+            )}
+
+            <form onSubmit={handleResetPassword}>
+              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+                Email Address
+              </label>
+              <input
+                type="email" value={resetEmail} onChange={e => setResetEmail(e.target.value)}
+                className="input-field" placeholder="you@example.com" required
+                style={{ marginBottom: '1.5rem' }}
+              />
+
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <button type="button" onClick={() => { setShowResetModal(false); setResetMessage({ type: '', text: '' }); }}
+                  className="btn-secondary" style={{ flex: 1 }}>
+                  Cancel
+                </button>
+                <button type="submit" disabled={resetLoading} className="btn-primary" style={{ flex: 2 }}>
+                  {resetLoading ? 'Sending...' : 'Send Link'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
