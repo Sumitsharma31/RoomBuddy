@@ -7,8 +7,10 @@ interface ExpenseCardProps {
     id: string; item: string; amount: number;
     paidBy: string; paidByName: string;
     date: Date; status: 'pending' | 'verified' | 'disputed';
+    verifications?: { userId: string; userName?: string; action: string }[];
   };
   currentUser: { uid: string } | null;
+  roomMembers?: { userId: string; name?: string; displayName?: string }[];
   onVerify?: (id: string) => void;
 }
 
@@ -18,9 +20,15 @@ const STATUS_CONFIG = {
   pending:  { label: 'Pending',  emoji: '⏳', class: 'badge-pending'  },
 };
 
-export default function ExpenseCard({ expense, currentUser, onVerify }: ExpenseCardProps) {
+export default function ExpenseCard({ expense, currentUser, roomMembers, onVerify }: ExpenseCardProps) {
   const isOwn = expense.paidBy === currentUser?.uid;
   const config = STATUS_CONFIG[expense.status];
+
+  const getVerifierName = (userId: string, savedName?: string) => {
+    if (savedName) return savedName;
+    const member = roomMembers?.find(m => m.userId === userId);
+    return member?.name || member?.displayName || 'Member';
+  };
 
   return (
     <div className="expense-card animate-fade-up">
@@ -67,7 +75,7 @@ export default function ExpenseCard({ expense, currentUser, onVerify }: ExpenseC
               <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
                 {expense.status === 'verified' ? 'Verified by' : 'Disputed by'}{' '}
                 <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                  {expense.verifications.map(v => v.userName || 'Member').join(', ')}
+                  {expense.verifications.map(v => getVerifierName(v.userId, v.userName)).join(', ')}
                 </span>
               </span>
             )}

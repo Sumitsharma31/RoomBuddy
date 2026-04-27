@@ -191,7 +191,12 @@ export default function RoomDashboard() {
           ) : (
             filteredExpenses.map((expense, i) => (
               <div key={expense.id} style={{ animationDelay: `${i * 0.05}s` }}>
-                <ExpenseCard expense={expense} currentUser={user} onVerify={() => setSelectedExpense(expense)} />
+                <ExpenseCard 
+                  expense={expense} 
+                  currentUser={user} 
+                  roomMembers={roomMembers}
+                  onVerify={() => setSelectedExpense(expense)} 
+                />
               </div>
             ))
           )}

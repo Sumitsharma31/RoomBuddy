@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, getDoc, updateDoc, collection, addDoc, getDocs, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -27,7 +27,7 @@ export default function AddExpensePage() {
 
   const router = useRouter();
 
-  useState(() => {
+  useEffect(() => {
     const unsubscribe = onAuthChange(async (currentUser) => {
       if (currentUser) {
         const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
