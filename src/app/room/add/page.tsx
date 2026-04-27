@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { doc, getDoc, updateDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, addDoc, getDocs, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { onAuthChange } from '@/lib/auth';
 
@@ -88,7 +88,7 @@ export default function AddExpensePage() {
               type: 'expense_added',
               roomId: user.currentRoomId,
             },
-          },
+          }),
         });
       }
 
