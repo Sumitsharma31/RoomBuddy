@@ -4,7 +4,7 @@ import android.os.Bundle;
 import com.getcapacitor.BridgeActivity;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.messaging.FirebaseMessaging;
-import com.getcapacitor.Logger;
+import android.util.Log;
 
 public class MainActivity extends BridgeActivity {
 
@@ -20,10 +20,10 @@ public class MainActivity extends BridgeActivity {
             .addOnCompleteListener(task -> {
                 if (task.isSuccessful()) {
                     String token = task.getResult();
-                    Logger.d("MainActivity", "FCM Token: " + token);
+                    Log.d("MainActivity", "FCM Token: " + token);
                     // Token is ready, you can send to your server here
                 } else {
-                    Logger.e("MainActivity", "Failed to get FCM token");
+                    Log.e("MainActivity", "Failed to get FCM token", task.getException());
                 }
             });
 
