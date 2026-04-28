@@ -105,12 +105,43 @@ export default function SettingsPage() {
     setDeleteLoading(true);
     try {
       const token = await auth.currentUser?.getIdToken();
-      const res = await fetch('/api/room/delete-request', {
+      // If single-member room, delete immediately
+      if (roomMembers.length === 1) {
+        const res = await fetch('/api/room/delete', {
+          method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ roomId: user.currentRoomId }),
+        });
+        if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Failed'); }
+        setShowDeleteModal(false);
+        router.push('/');
+      } else {
+        // Multi-member room: request deletion
+        const res = await fetch('/api/room/delete-request', {
+          method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ roomId: user.currentRoomId }),
+        });
+        if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Failed'); }
+        setShowDeleteModal(false);
+      }
+    } catch (e: any) { alert(e.message); } finally { setDeleteLoading(false); }
+  };
+
+  const handleApproveDeletion = async () => {
+    if (!user || !user.currentRoomId) return;
+    setDeleteLoading(true);
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      const res = await fetch('/api/room/approve-deletion', {
         method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ roomId: user.currentRoomId }),
       });
       if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Failed'); }
-      setShowDeleteModal(false);
+      // If room was deleted, redirect
+      const data = await res.json();
+      if (data.deleted) {
+        setShowDeleteModal(false);
+        router.push('/');
+      }
     } catch (e: any) { alert(e.message); } finally { setDeleteLoading(false); }
   };
 
@@ -195,19 +226,44 @@ export default function SettingsPage() {
               <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
                 All members must approve to delete the room.
               </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
                 {roomMembers.map(m => {
                   const vote = deletionRequest.votes?.find((v: any) => v.userId === m.userId);
+                  const hasApproved = !!vote;
+                  const isSelf = m.userId === user?.uid;
                   return (
                     <div key={m.userId} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0.75rem', background: 'var(--bg-glass)', borderRadius: '0.625rem' }}>
                       <span style={{ fontSize: '0.875rem', color: 'var(--text-primary)' }}>{m.displayName}</span>
-                      <span style={{ fontSize: '0.75rem', fontWeight: 600, color: vote ? 'var(--success)' : 'var(--text-muted)' }}>
-                        {vote ? '✓ Approved' : 'Pending…'}
-                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        {hasApproved ? (
+                          <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--success)' }}>✓ Approved</span>
+                        ) : isSelf && isAdmin ? (
+                          <button onClick={handleRequestDeletion} disabled={deleteLoading} style={{
+                            fontSize: '0.75rem', fontWeight: 600, color: 'var(--danger)',
+                            background: 'transparent', border: '1px solid var(--danger)', borderRadius: '0.5rem', padding: '0.25rem 0.5rem', cursor: 'pointer'
+                          }}>
+                            Delete Now
+                          </button>
+                        ) : isSelf ? (
+                          <button onClick={handleApproveDeletion} disabled={deleteLoading} style={{
+                            fontSize: '0.75rem', fontWeight: 600, color: 'var(--success)',
+                            background: 'var(--bg-glass)', border: '1px solid var(--success)', borderRadius: '0.5rem', padding: '0.25rem 0.5rem', cursor: 'pointer'
+                          }}>
+                            Approve
+                          </button>
+                        ) : (
+                          <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>Pending…</span>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
               </div>
+              {deletionRequest.status === 'approved' && !isAdmin && (
+                <button onClick={handleRequestDeletion} disabled={deleteLoading} className="btn-danger" style={{ width: '100%', padding: '0.75rem', textAlign: 'center' }}>
+                  🗑️ Finalize Deletion
+                </button>
+              )}
             </div>
           )}
 
@@ -220,9 +276,13 @@ export default function SettingsPage() {
                   <button onClick={() => setShowTransferModal(true)} className="btn-warning" style={{ width: '100%', padding: '0.875rem', textAlign: 'center' }}>
                     🔄 Transfer Admin Role
                   </button>
-                  {!deletionRequest && (
+                  {!deletionRequest ? (
                     <button onClick={() => setShowDeleteModal(true)} className="btn-danger" style={{ width: '100%', padding: '0.875rem', textAlign: 'center' }}>
                       🗑️ Delete Room
+                    </button>
+                  ) : deletionRequest.status === 'approved' && roomMembers.length > 1 && (
+                    <button onClick={handleRequestDeletion} disabled={deleteLoading} className="btn-danger" style={{ width: '100%', padding: '0.875rem', textAlign: 'center' }}>
+                      🗑️ Finalize Deletion
                     </button>
                   )}
                 </>

@@ -1,16 +1,14 @@
 {
   "lib\\firebase.ts -> firebase/analytics": {
-    "id": 2650,
+    "id": "lib\\firebase.ts -> firebase/analytics",
     "files": [
-      "static/chunks/349.b4c3667fc3585bd0.js",
-      "static/chunks/650.0cdbefbfc34ccdf3.js"
+      "static/chunks/_app-pages-browser_node_modules_firebase_analytics_dist_esm_index_esm_js.js"
     ]
   },
   "lib\\firebase.ts -> firebase/messaging": {
-    "id": 7910,
+    "id": "lib\\firebase.ts -> firebase/messaging",
     "files": [
-      "static/chunks/349.b4c3667fc3585bd0.js",
-      "static/chunks/910.c2bfe03f6b2f4f56.js"
+      "static/chunks/_app-pages-browser_node_modules_firebase_messaging_dist_esm_index_esm_js.js"
     ]
   }
 }

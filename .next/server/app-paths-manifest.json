@@ -1,22 +1,7 @@
 {
-  "/_not-found/page": "app/_not-found/page.js",
-  "/(auth)/signup/page": "app/(auth)/signup/page.js",
-  "/api/expense/verify/route": "app/api/expense/verify/route.js",
-  "/(auth)/login/page": "app/(auth)/login/page.js",
-  "/api/expense/add/route": "app/api/expense/add/route.js",
-  "/api/room/delete-request/route": "app/api/room/delete-request/route.js",
-  "/api/notify/route": "app/api/notify/route.js",
-  "/api/room/leave/route": "app/api/room/leave/route.js",
-  "/api/room/delete/route": "app/api/room/delete/route.js",
-  "/api/room/create/route": "app/api/room/create/route.js",
-  "/api/settle/route": "app/api/settle/route.js",
-  "/api/room/transfer-admin/route": "app/api/room/transfer-admin/route.js",
   "/notifications/page": "app/notifications/page.js",
   "/page": "app/page.js",
-  "/room/add/page": "app/room/add/page.js",
-  "/room/page": "app/room/page.js",
-  "/room/settle/page": "app/room/settle/page.js",
-  "/api/room/join/route": "app/api/room/join/route.js",
-  "/room/verify/page": "app/room/verify/page.js",
-  "/room/settings/page": "app/room/settings/page.js"
+  "/room/settings/page": "app/room/settings/page.js",
+  "/api/room/approve-deletion/route": "app/api/room/approve-deletion/route.js",
+  "/room/page": "app/room/page.js"
 }

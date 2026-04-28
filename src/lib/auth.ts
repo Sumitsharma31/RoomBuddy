@@ -61,23 +61,19 @@ export async function signup(name: string, email: string, password: string): Pro
   }
 }
 
-export async function loginWithGoogle(): Promise<void> {
+export async function loginWithGoogle(): Promise<User> {
   const provider = new GoogleAuthProvider();
   try {
-    // For mobile WebViews, redirect is much more reliable than popup
-    await signInWithRedirect(auth, provider);
+    // Switching to popup to avoid third-party cookie/partitioning issues in modern browsers
+    const result = await signInWithPopup(auth, provider);
+    return result.user;
   } catch (error: any) {
     throw new Error(error.message || 'Google login failed');
   }
 }
 
 export async function getGoogleRedirectResult(): Promise<User | null> {
-  try {
-    const result = await getRedirectResult(auth);
-    return result?.user || null;
-  } catch (error: any) {
-    throw new Error(error.message || 'Failed to get redirect result');
-  }
+  return null; // Deprecated: no longer using redirect
 }
 
 export async function logout(): Promise<void> {

@@ -14,8 +14,10 @@ export async function POST(request: NextRequest) {
     }
 
     const token = authHeader.split(' ')[1];
+    let userId: string;
     try {
-      await adminAuth.verifyIdToken(token);
+      const decodedToken = await adminAuth.verifyIdToken(token);
+      userId = decodedToken.uid;
     } catch (error) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
@@ -28,16 +30,46 @@ export async function POST(request: NextRequest) {
     }
 
     const roomRef = adminDb.collection('rooms').doc(roomId);
+    const roomSnap = await roomRef.get();
+
+    if (!roomSnap.exists) {
+      return NextResponse.json({ error: 'Room not found' }, { status: 404 });
+    }
+
+    const roomData = roomSnap.data();
+    if (!roomData) {
+      return NextResponse.json({ error: 'Room data not found' }, { status: 404 });
+    }
+
+    // Check if user is admin
+    if (roomData.adminId !== userId) {
+      return NextResponse.json({ error: 'Only admin can delete room' }, { status: 403 });
+    }
+
+    // Check if room has only one member (admin)
+    const membersSnap = await roomRef.collection('members').get();
+    const memberCount = membersSnap.size;
+
+    if (memberCount === 1) {
+      // Single-member room: delete immediately
+      await adminDb.runTransaction(async (transaction) => {
+        // Clear currentRoomId for the admin
+        transaction.update(adminDb.collection('users').doc(userId), { currentRoomId: null });
+        transaction.delete(roomRef);
+      });
+      return NextResponse.json({ success: true });
+    }
+
+    // Multi-member room: check deletionRequest
     const delRequestRef = roomRef.collection('deletionRequest').doc('current');
     const delSnap = await delRequestRef.get();
-
     const delData = delSnap.data();
+
     if (!delSnap.exists || !delData || delData.status !== 'approved') {
       return NextResponse.json({ error: 'Deletion not authorized or request not found' }, { status: 403 });
     }
 
     // Get all members to clear their currentRoomId
-    const membersSnap = await roomRef.collection('members').get();
     const memberIds = membersSnap.docs.map(d => d.id);
 
     // Delete everything related to the room
@@ -46,10 +78,6 @@ export async function POST(request: NextRequest) {
       memberIds.forEach(uid => {
         transaction.update(adminDb.collection('users').doc(uid), { currentRoomId: null });
       });
-
-      // We should delete subcollections here too, but Firestore Admin doesn't have recursive delete in transactions easily
-      // For simplicity in this demo, we just delete the main room doc. 
-      // In production, we'd use a cloud function or a recursive delete utility.
       transaction.delete(roomRef);
     });
 

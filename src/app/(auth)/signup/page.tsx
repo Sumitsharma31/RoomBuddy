@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { login, signup, loginWithGoogle, getGoogleRedirectResult } from '@/lib/auth';
+import { login, signup, loginWithGoogle } from '@/lib/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
@@ -15,29 +15,7 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  useEffect(() => {
-    const handleRedirect = async () => {
-      try {
-        const user = await getGoogleRedirectResult();
-        if (user) {
-          setLoading(true);
-          const userDocRef = doc(db, 'users', user.uid);
-          const userSnap = await getDoc(userDocRef);
-          if (!userSnap.exists()) {
-            await setDoc(userDocRef, {
-              name: user.displayName || 'Roommate', email: user.email,
-              photoURL: user.photoURL, currentRoomId: null, fcmToken: null, createdAt: new Date(),
-            });
-          }
-          router.push('/');
-        }
-      } catch (err: any) {
-        setError(err.message);
-        setLoading(false);
-      }
-    };
-    handleRedirect();
-  }, [router]);
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,7 +55,18 @@ export default function SignupPage() {
     setError('');
     setLoading(true);
     try {
-      await loginWithGoogle();
+      const user = await loginWithGoogle();
+      if (user) {
+        const userDocRef = doc(db, 'users', user.uid);
+        const userSnap = await getDoc(userDocRef);
+        if (!userSnap.exists()) {
+          await setDoc(userDocRef, {
+            name: user.displayName || 'Roommate', email: user.email,
+            photoURL: user.photoURL, currentRoomId: null, fcmToken: null, createdAt: new Date(),
+          });
+        }
+        router.push('/');
+      }
     } catch (err: any) {
       setError(err.message);
       setLoading(false);

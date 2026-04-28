@@ -4,7 +4,8 @@
       "Bash(npx create-next-app@latest . --typescript --tailwind --app --eslint --src-dir --import-alias \"@/*\" --use-npm --yes)",
       "Bash(npm init *)",
       "Bash(npm install *)",
-      "Bash(npx tailwindcss *)"
+      "Bash(npx tailwindcss *)",
+      "Bash(npx tsc *)"
     ]
   }
 }
