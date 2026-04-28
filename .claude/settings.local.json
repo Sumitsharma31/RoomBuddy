@@ -5,7 +5,9 @@
       "Bash(npm init *)",
       "Bash(npm install *)",
       "Bash(npx tailwindcss *)",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(npx cap *)",
+      "Bash(./gradlew clean *)"
     ]
   }
 }

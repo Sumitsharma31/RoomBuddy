@@ -10,6 +10,12 @@ const config: CapacitorConfig = {
     // When you deploy the app to production (Vercel), change this to your live URL (e.g. https://roomsplit.vercel.app)
     url: 'https://roomledger.vercel.app/',
     cleartext: false // Disable cleartext for production HTTPS
+  },
+  plugins: {
+    PushNotifications: {
+      // Push notification configuration
+      // The plugin will handle FCM registration automatically
+    }
   }
 };
 

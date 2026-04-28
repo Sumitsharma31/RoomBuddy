@@ -1,12 +1,17 @@
-import { messaging } from './firebase';
+import { messaging, isSupported } from './firebase';
 import { getToken, onMessage, MessagePayload } from 'firebase/messaging';
 import { db } from './firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { Platform } from '@capacitor/core';
 
 // Get FCM token for current user
 export async function getFCMToken(): Promise<string | null> {
   if (!messaging) return null;
   try {
+    // Request permission for web
+    const permission = await requestNotificationPermission();
+    if (!permission) return null;
+
     const token = await getToken(messaging, {
       vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
     });
@@ -20,6 +25,7 @@ export async function getFCMToken(): Promise<string | null> {
 // Request notification permission
 export async function requestNotificationPermission(): Promise<boolean> {
   try {
+    if (typeof Notification === 'undefined') return false;
     const permission = await Notification.requestPermission();
     return permission === 'granted';
   } catch (error) {
@@ -28,8 +34,9 @@ export async function requestNotificationPermission(): Promise<boolean> {
   }
 }
 
-// Listen for incoming messages
+// Listen for incoming messages (web only)
 export function onMessageListener(callback: (payload: MessagePayload) => void) {
+  if (!messaging) return null;
   return onMessage(messaging, (payload) => {
     callback(payload);
   });
@@ -53,15 +60,68 @@ export async function saveNotification(userId: string, notification: {
   return notifDoc.id;
 }
 
-// Initialize FCM for Capacitor (mobile)
+// Initialize FCM for Capacitor (mobile) and web
 export async function initializeFCM(): Promise<string | null> {
-  // For web
-  const permission = await requestNotificationPermission();
-  if (permission) {
-    const token = await getFCMToken();
-    return token;
+  const isMobile = Platform.is('android') || Platform.is('ios');
+
+  // For web, request permission and get token
+  if (!isMobile) {
+    const permission = await requestNotificationPermission();
+    if (permission) {
+      const token = await getFCMToken();
+      return token;
+    }
+    return null;
   }
+
+  // For mobile (Capacitor), the Capacitor Push Notifications plugin
+  // handles FCM token registration automatically
+  // You should register for push notifications via Capacitor API
   return null;
+}
+
+// Register for push notifications (Capacitor)
+export async function registerPushNotifications(): Promise<void> {
+  const isMobile = Platform.is('android') || Platform.is('ios');
+
+  if (!isMobile) return;
+
+  try {
+    // Import Capacitor PushNotifications dynamically
+    const { PushNotifications } = await import('@capacitor/push-notifications');
+
+    // Request permission for Android 13+
+    const permissionStatus = await PushNotifications.requestPermissions();
+
+    if (permissionStatus.receive !== 'granted') {
+      console.error('Push notification permission not granted');
+      return;
+    }
+
+    // Register for push notifications
+    await PushNotifications.register();
+
+    // VERIFICATION: Get token directly for immediate check
+    const tokenResult = await PushNotifications.getToken();
+    console.log('=== Direct FCM Token Check:', tokenResult.value);
+
+    // VERIFICATION: Listen for registration event to get FCM token
+    // Remove this listener after verifying token is received
+    PushNotifications.addListener('registration', (token) => {
+      console.log('=== FCM Token from registration event:', token.value);
+    });
+
+    // Listen for push notification events
+    PushNotifications.addListener('pushNotificationReceived', (notification) => {
+      console.log('Push notification received:', notification);
+    });
+
+    PushNotifications.addListener('pushNotificationRegistrationFailed', (error) => {
+      console.error('Push notification registration failed:', error);
+    });
+  } catch (error) {
+    console.error('Error registering push notifications:', error);
+  }
 }
 
 // Send notification via API (called from server-side)

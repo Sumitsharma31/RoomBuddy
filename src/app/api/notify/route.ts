@@ -3,8 +3,8 @@ import { getAdminApp } from '@/lib/firebaseAdmin';
 
 export async function POST(request: NextRequest) {
   try {
-    const { adminAuth, adminDb } = getAdminApp();
-    if (!adminAuth || !adminDb) {
+    const { adminApp } = getAdminApp();
+    if (!adminApp) {
       return NextResponse.json({ error: 'Firebase Admin not configured' }, { status: 500 });
     }
 
@@ -15,13 +15,13 @@ export async function POST(request: NextRequest) {
 
     const token = authHeader.split(' ')[1];
     try {
-      await adminAuth.verifyIdToken(token);
+      await adminApp.auth().verifyIdToken(token);
     } catch (error) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
     const body = await request.json();
-    const { userIds, title, body: message, data } = body;
+    const { userIds, tokens, title, body: message, data } = body;
 
     if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
       return NextResponse.json({ error: 'User IDs array is required' }, { status: 400 });
@@ -31,9 +31,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Title and message are required' }, { status: 400 });
     }
 
+    const admin = require('firebase-admin');
+    const messaging = admin.messaging();
+
     // Save notifications to Firestore for each user
     const notificationPromises = userIds.map((uid: string) =>
-      adminDb.collection('notifications').doc(uid).collection('items').add({
+      adminApp.firestore().collection('notifications').doc(uid).collection('items').add({
         type: data?.type || 'notification',
         message,
         roomId: data?.roomId || null,
@@ -45,10 +48,34 @@ export async function POST(request: NextRequest) {
 
     await Promise.all(notificationPromises);
 
-    // FCM integration would go here using admin.messaging()
-    // For now, we focus on Firestore notifications
+    // Send FCM notifications if tokens are provided
+    let fcmResults = [];
+    if (tokens && Array.isArray(tokens) && tokens.length > 0) {
+      // Build the message payload
+      const messagePayload = {
+        notification: {
+          title,
+          body: message,
+        },
+        data: data || {},
+        tokens: tokens,
+      };
 
-    return NextResponse.json({ success: true, notifiedCount: userIds.length });
+      // Send multicast message to all tokens
+      try {
+        const response = await messaging.sendEachForMulticast(messagePayload);
+        fcmResults = response.responses;
+        console.log('FCM multicast send response:', response);
+      } catch (error) {
+        console.error('FCM send error:', error);
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      notifiedCount: userIds.length,
+      fcmResults: fcmResults,
+    });
   } catch (error) {
     console.error('Error sending notification:', error);
     return NextResponse.json({ error: 'Failed to send notification' }, { status: 500 });
